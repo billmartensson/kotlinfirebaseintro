@@ -13,6 +13,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 @IgnoreExtraProperties
 data class Todothing(
+    var fbkey: String? = null,
     var todotitle: String? = "",
     var done: Boolean? = false
 )
@@ -22,7 +23,6 @@ class MainActivity : AppCompatActivity() {
 
     var todoadapter = Tododapter()
 
-    private lateinit var database: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         todoRecview.layoutManager = LinearLayoutManager(this)
         todoRecview.adapter = todoadapter
 
-        database = Firebase.database.reference
+        todoadapter.database = Firebase.database.reference
 
         /*
         // Write a message to the database
@@ -60,51 +60,25 @@ class MainActivity : AppCompatActivity() {
 
 
         todoBtn.setOnClickListener {
-            var thingtodo = Todothing(todoET.text.toString(), false)
+            //var thingtodo = Todothing(todoET.text.toString(), false)
 
-            database.child("todo").push().setValue(thingtodo)
+            var thingtodo = Todothing(todotitle = todoET.text.toString(), done = false)
 
-            loadTodo()
+            todoadapter.database.child("todo").push().setValue(thingtodo)
+
+            todoET.setText("")
+            todoadapter.loadTodo()
         }
 
 
-        loadTodo()
+        todoadapter.loadTodo()
 
 
 
     }
 
 
-    fun loadTodo()
-    {
-        todoadapter.todolist.clear()
 
-        val todoListener = object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                // Get Post object and use the values to update the UI
-
-                for (todochild in dataSnapshot.children)
-                {
-                    val todo = todochild.getValue<Todothing>()
-
-                    todoadapter.todolist.add(todo!!)
-
-                    Log.i("BILLDEBUG", todo!!.todotitle)
-                }
-
-                todoadapter.notifyDataSetChanged()
-
-
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Getting Post failed, log a message
-                Log.w("BILLDEBUG", "loadPost:onCancelled", databaseError.toException())
-                // ...
-            }
-        }
-        database.child("todo").addListenerForSingleValueEvent(todoListener)
-    }
 
 
 }
