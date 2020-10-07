@@ -1,6 +1,8 @@
 package se.magictechnology.myfirebase
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -11,6 +13,7 @@ import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -39,6 +42,24 @@ class MainActivity : AppCompatActivity() {
         todoadapter.database = Firebase.database.reference
         todoadapter.auth = Firebase.auth
         auth = Firebase.auth
+
+
+        var storage = Firebase.storage
+        var storageRef = storage.reference
+
+        var theStorageImageRef = storageRef.child("frog.jpg")
+
+        val ONE_MEGABYTE: Long = 1024 * 1024
+        theStorageImageRef.getBytes(ONE_MEGABYTE).addOnSuccessListener { theBytes ->
+            // Data for "images/island.jpg" is returned, use this as needed
+
+            var theBitmap = BitmapFactory.decodeByteArray(theBytes, 0, theBytes.size)
+            todoStartimageView.setImageBitmap(theBitmap)
+
+        }.addOnFailureListener {
+            // Handle any errors
+        }
+
 
         /*
         // Write a message to the database
