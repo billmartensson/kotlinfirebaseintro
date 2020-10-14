@@ -16,10 +16,7 @@ import kotlinx.android.synthetic.main.todo_item.view.*
 
 class Tododapter() : RecyclerView.Adapter<TodoViewHolder>() {
 
-    lateinit var database: DatabaseReference
-    lateinit var auth: FirebaseAuth
-
-    var todolist = mutableListOf<Todothing>()
+    lateinit var parentActivity : MainActivity
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoViewHolder {
         val vh = TodoViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.todo_item, parent, false))
@@ -27,13 +24,17 @@ class Tododapter() : RecyclerView.Adapter<TodoViewHolder>() {
     }
 
     override fun getItemCount(): Int {
-        return todolist.size
+        parentActivity.viewModel.todolist.value?.let {
+            return it.size
+        }
+
+        return 0
     }
 
     override fun onBindViewHolder(holder: TodoViewHolder, position: Int) {
-        holder.todoText.text = todolist[position].todotitle
+        holder.todoText.text = parentActivity.viewModel.todolist.value!![position].todotitle
 
-        if(todolist[position].done == true)
+        if(parentActivity.viewModel.todolist.value!![position].done == true)
         {
             holder.todoDone.setBackgroundColor(Color.GREEN)
         } else {
@@ -41,51 +42,12 @@ class Tododapter() : RecyclerView.Adapter<TodoViewHolder>() {
         }
 
         holder.itemView.setOnClickListener {
-
-            if(todolist[position].done == true)
-            {
-                database.child("todousers").child(auth.currentUser!!.uid).child(todolist[position].fbkey!!).child("done").setValue(false)
-                //database.child("todo").child(todolist[position].fbkey!!).removeValue()
-            } else {
-                database.child("todousers").child(auth.currentUser!!.uid).child(todolist[position].fbkey!!).child("done").setValue(true)
-            }
-
-            loadTodo()
+            parentActivity.viewModel.changeDone(position)
         }
-
-
     }
 
 
-    fun loadTodo()
-    {
-        todolist.clear()
 
-        val todoListener = object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                // Get Post object and use the values to update the UI
-
-                for (todochild in dataSnapshot.children)
-                {
-                    val todo = todochild.getValue<Todothing>()
-                    todo!!.fbkey = todochild.key
-                    todolist.add(todo!!)
-
-                    Log.i("BILLDEBUG", todochild.key)
-                    Log.i("BILLDEBUG", todo!!.todotitle)
-                }
-
-                notifyDataSetChanged()
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Getting Post failed, log a message
-                Log.w("BILLDEBUG", "loadPost:onCancelled", databaseError.toException())
-                // ...
-            }
-        }
-        database.child("todousers").child(auth.currentUser!!.uid).orderByChild("done").addListenerForSingleValueEvent(todoListener)
-    }
 
 
 }

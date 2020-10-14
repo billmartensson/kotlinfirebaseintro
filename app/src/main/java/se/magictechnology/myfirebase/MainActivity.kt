@@ -6,6 +6,10 @@ import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -16,50 +20,47 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.android.synthetic.main.activity_main.*
 
-
-@IgnoreExtraProperties
-data class Todothing(
-    var fbkey: String? = null,
-    var todotitle: String? = "",
-    var done: Boolean? = false
-)
-
-
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var auth: FirebaseAuth
+    lateinit var viewModel: MainViewModel
 
     var todoadapter = Tododapter()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+
+        todoadapter.parentActivity = this
         todoRecview.layoutManager = LinearLayoutManager(this)
         todoRecview.adapter = todoadapter
 
-        todoadapter.database = Firebase.database.reference
-        todoadapter.auth = Firebase.auth
-        auth = Firebase.auth
+        viewModel.errorMessage.observe(this, Observer { errtxt ->
+            Toast.makeText(this, errtxt, Toast.LENGTH_LONG).show()
+        })
 
+        viewModel.loading.observe(this, Observer {
+            if(it == true)
+            {
+                loadingCL.visibility = View.VISIBLE
+            } else {
+                loadingCL.visibility = View.INVISIBLE
+            }
+        })
 
-        var storage = Firebase.storage
-        var storageRef = storage.reference
+        viewModel.startBitmap.observe(this, Observer { loadedBitmap ->
+            todoStartimageView.setImageBitmap(loadedBitmap)
+        })
+        viewModel.loadTheImage()
 
-        var theStorageImageRef = storageRef.child("frog.jpg")
+        viewModel.todolist.observe(this, Observer {
+            todoadapter.notifyDataSetChanged()
+        })
 
-        val ONE_MEGABYTE: Long = 1024 * 1024
-        theStorageImageRef.getBytes(ONE_MEGABYTE).addOnSuccessListener { theBytes ->
-            // Data for "images/island.jpg" is returned, use this as needed
-
-            var theBitmap = BitmapFactory.decodeByteArray(theBytes, 0, theBytes.size)
-            todoStartimageView.setImageBitmap(theBitmap)
-
-        }.addOnFailureListener {
-            // Handle any errors
+        todoStartimageView.setOnClickListener {
+            viewModel.loadTheImage()
         }
-
 
         /*
         // Write a message to the database
@@ -88,18 +89,12 @@ class MainActivity : AppCompatActivity() {
 
 
         todoBtn.setOnClickListener {
-            //var thingtodo = Todothing(todoET.text.toString(), false)
-
-            var thingtodo = Todothing(todotitle = todoET.text.toString(), done = false)
-
-            todoadapter.database.child("todousers").child(auth.currentUser!!.uid).push().setValue(thingtodo)
-
+            viewModel.addTodo(todoET.text.toString())
             todoET.setText("")
-            todoadapter.loadTodo()
         }
 
         logoutBtn.setOnClickListener {
-            auth.signOut()
+            viewModel.auth.signOut()
 
             val intent = Intent(this, LoginRegisterActivity::class.java)
 
@@ -114,16 +109,16 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        if(auth.currentUser == null)
+        if(viewModel.auth.currentUser == null)
         {
             val intent = Intent(this, LoginRegisterActivity::class.java)
 
             startActivity(intent)
         } else {
 
-            Log.i("BILLDEBUG", "USER ID IS " + auth.currentUser!!.uid)
+            Log.i("BILLDEBUG", "USER ID IS " + viewModel.auth.currentUser!!.uid)
 
-            todoadapter.loadTodo()
+            viewModel.loadTodo()
         }
 
 
