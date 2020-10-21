@@ -60,6 +60,7 @@
         android:layout_width="0dp"
         android:layout_height="200dp"
         android:layout_marginBottom="8dp"
+        android:scaleType="fitStart"
         app:layout_constraintBottom_toTopOf="@+id/logoutBtn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
